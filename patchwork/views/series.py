@@ -5,9 +5,12 @@
 
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.shortcuts import render
 
 from patchwork.models import Series
+from patchwork.models import Project
 from patchwork.views.utils import series_to_mbox
+from patchwork.forms import SeriesBulkUpdatePatchesForm
 
 
 def series_mbox(request, series_id):
@@ -20,3 +23,56 @@ def series_mbox(request, series_id):
     )
 
     return response
+
+
+def series_list(request, project_id):
+    project = get_object_or_404(Project, linkname=project_id)
+
+    form = SeriesBulkUpdatePatchesForm(project)
+    context = {}
+
+    if request.method == 'POST':
+        form = SeriesBulkUpdatePatchesForm(project, request.POST)
+        errors = _update_series_patches(request, form)
+        if len(errors) > 0:
+            context.update({'errors': errors})
+    else:
+        form = SeriesBulkUpdatePatchesForm(project)
+
+    series_list = (
+        Series.objects.filter(project=project)
+        .only(
+            'submitter',
+            'project',
+            'version',
+            'name',
+            'date',
+            'id',
+        )
+        .select_related('project')
+    )
+
+    context.update(
+        {
+            'project': project,
+            'projects': Project.objects.all(),
+            'series_list': series_list,
+            'form': form,
+        }
+    )
+
+    return render(request, 'patchwork/series-list.html', context)
+
+
+def _update_series_patches(request, form):
+    pk = request.POST.get('save')
+    series = Series.objects.get(id=pk)
+
+    if not form.is_valid():
+        errors = ['The submitted form data was invalid']
+        for field_name, error_message in form.errors.items():
+            errors.append(f'{field_name}: {error_message}')
+
+        return errors
+
+    return form.save(series, request)
