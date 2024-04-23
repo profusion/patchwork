@@ -8,7 +8,9 @@ from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 
 from patchwork.models import Series
+from patchwork.models import Patch
 from patchwork.models import Project
+from patchwork.views import generic_list
 from patchwork.views.utils import series_to_mbox
 from patchwork.forms import SeriesBulkUpdatePatchesForm
 
@@ -23,6 +25,24 @@ def series_mbox(request, series_id):
     )
 
     return response
+
+
+def series_detail(request, series_id):
+    series = get_object_or_404(Series, id=series_id)
+
+    patches = Patch.objects.filter(series=series)
+
+    context = generic_list(
+        request,
+        series.project,
+        'series-detail',
+        view_args={'series_id': series_id},
+        patches=patches,
+    )
+
+    context.update({'series': series})
+
+    return render(request, 'patchwork/series-detail.html', context)
 
 
 def series_list(request, project_id):
