@@ -911,6 +911,25 @@ class Series(FilenameMixin, models.Model):
     def received_all(self):
         return self.total <= self.received_total
 
+    @property
+    def check_count(self):
+        """Generate a list of unique checks for all patchs in the series.
+
+        Compile a list of checks associated with this series patches for each
+        type of check. Only "unique" checks are considered, identified by their
+        'context' field. This means, given n checks with the same 'context', the
+        newest check is the only one counted regardless of its value. The end
+        result will be a association of types to number of unique checks for
+        said type.
+        """
+        counts = {key: 0 for key, _ in Check.STATE_CHOICES}
+
+        for p in self.patches.all():
+            for check in p.checks:
+                counts[check.state] += 1
+
+        return counts
+
     def add_cover_letter(self, cover):
         """Add a cover letter to the series.
 
