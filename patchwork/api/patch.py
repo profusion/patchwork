@@ -425,6 +425,7 @@ class PatchDetail(RetrieveUpdateAPIView):
         req_user_id = request.user.id
         is_maintainer = request.user.is_authenticated and (
             obj.project in request.user.profile.maintainer_projects.all()
+            or request.user.is_superuser
         )
 
         if 'attention_set' in request.data and request.method in ('PATCH',):
