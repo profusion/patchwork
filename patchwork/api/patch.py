@@ -425,7 +425,16 @@ class PatchDetail(RetrieveUpdateAPIView):
         req_user_id = request.user.id
         is_maintainer = request.user.is_authenticated and (
             obj.project in request.user.profile.maintainer_projects.all()
+            or request.user.is_superuser
         )
+        non_attention_set_keys = [
+            key for key in request.data if key != 'attention_set'
+        ]
+
+        if non_attention_set_keys and not is_maintainer:
+            raise PermissionDenied(
+                detail='You do not have permission to edit patch properties.'
+            )
 
         if 'attention_set' in request.data and request.method in ('PATCH',):
             attention_set = request.data.get('attention_set', None)

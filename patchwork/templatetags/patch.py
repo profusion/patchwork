@@ -79,7 +79,7 @@ def patch_commit_display(patch):
 
 @register.filter(name='patch_interest')
 def patch_interest(patch):
-    reviews = patch.attention_set.count()
+    reviews = patch.patchattentionset_set.filter(removed=False).count()
     review_title = (
         f'has {reviews} interested reviewers'
         if reviews > 0

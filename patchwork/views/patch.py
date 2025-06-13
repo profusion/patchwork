@@ -66,6 +66,7 @@ def patch_detail(request, project_id, msgid):
     is_maintainer = (
         request.user.is_authenticated
         and project in request.user.profile.maintainer_projects.all()
+        or request.user.is_superuser
     )
 
     form = None
@@ -89,9 +90,7 @@ def patch_detail(request, project_id, msgid):
         elif action in ['add-interest', 'remove-interest']:
             if request.user.is_authenticated:
                 if action == 'add-interest':
-                    PatchAttentionSet.objects.get_or_create(
-                        patch=patch, user=request.user
-                    )
+                    PatchAttentionSet.objects.upsert(patch, [request.user.id])
                     message = (
                         'You have declared interest in reviewing this patch'
                     )
